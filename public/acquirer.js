@@ -4,7 +4,7 @@ const grid = document.querySelector('#acquirers');
 const errorBox = document.querySelector('#error');
 
 async function loadAcquirers() {
-  if (!countryCode) { window.location.href = '/index.html'; return; }
+  if (!countryCode) { window.location.href = './index.html'; return; }
   try {
     const countries = await fetch(`${window.API_BASE_URL}/api/countries`).then(r => r.json());
     const country = countries[countryCode];
@@ -14,7 +14,7 @@ async function loadAcquirers() {
     document.querySelector('#country-title').textContent = `${country.name} — elige un adquirente`;
 
     grid.innerHTML = Object.entries(country.acquirers).map(([id, acquirer]) => `
-      <a class="card" href="/checkout.html?country=${countryCode}&acquirer=${id}">
+      <a class="card" href="./checkout.html?country=${countryCode}&acquirer=${id}">
         ${acquirer.logo ? `<img class="card-logo" src="${acquirer.logo}" alt="${acquirer.name}" onerror="this.remove()">` : ''}
         <span class="card-title">${acquirer.name}</span>
         <span class="card-sub">${country.currency}</span>
