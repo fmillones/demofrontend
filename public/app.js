@@ -3,7 +3,7 @@ const countryCode = params.get('country');
 const acquirerId = params.get('acquirer');
 
 if (!countryCode || !acquirerId) {
-  window.location.href = '/index.html';
+  window.location.href = './index.html';
 }
 
 const form = document.querySelector('#payment-form');
