@@ -196,7 +196,7 @@ async function payWithQr(payload) {
     } catch (err) {
       debugLog('recv', `GET /api/payments/qr/${data.transactionId} (poll #${pollCount}) ERROR`, { error: err.message });
     }
-  }, 10000);
+  }, 20000);
 
   statusText('Escanea el código QR desde tu billetera electrónica.');
 }
