@@ -7,10 +7,6 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon-reset.min.css">
   <script src="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon.js"></script>
-  <script type="module">
-    import QRCode from 'https://esm.sh/qrcode@1.5.3';
-    window.QRCode = QRCode;
-  </script>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -42,7 +38,7 @@
     <section id="checkout" hidden><h2>Datos de tarjeta</h2><div id="form-container"></div></section>
     <section id="qr-checkout" class="qr-box" hidden>
       <h2>Escanea para pagar</h2>
-      <canvas id="qr-canvas"></canvas>
+      <img id="qr-canvas" width="240" height="240" alt="Código QR de pago">
       <p class="qr-hint">Escanee desde su billetera electrónica</p>
       <p class="qr-meta">Expira en: <strong id="qr-expires">--:--</strong></p>
       <p class="qr-meta">Estado: <strong id="qr-status">Pendiente…</strong></p>

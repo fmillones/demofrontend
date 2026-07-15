@@ -102,21 +102,6 @@ async function payWithCard(payload) {
   await initializeCardCheckout(data.formToken);
 }
 
-//atix
- function waitForQrLibrary(timeoutMs = 8000) {
-   return new Promise((resolve, reject) => {
-     if (window.QRCode) return resolve();
-     const deadline = Date.now() + timeoutMs;
-     const check = () => {
-       if (window.QRCode) return resolve();
-       if (Date.now() > deadline) return reject(new Error('No se pudo cargar la librería QR (CDN bloqueado o sin conexión).'));
-       window.setTimeout(check, 50);
-     };
-     check();
-   });
- }
-
-
 function stopQrPolling() {
   if (qrPollTimer) { clearInterval(qrPollTimer); qrPollTimer = null; }
   if (qrCountdownTimer) { clearInterval(qrCountdownTimer); qrCountdownTimer = null; }
@@ -138,13 +123,12 @@ async function payWithQr(payload) {
   form.hidden = true;
   qrCheckout.hidden = false;
 
-  const canvas = document.querySelector('#qr-canvas');
+  const qrImage = document.querySelector('#qr-canvas');
   const expiresLabel = document.querySelector('#qr-expires');
   const statusLabel = document.querySelector('#qr-status');
   statusLabel.textContent = 'Pendiente…';
 
-  await waitForQrLibrary();
-  await QRCode.toCanvas(canvas, data.qrHash, { width: 240 });
+  qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(data.qrHash)}`;
 
   const expiresAt = new Date(data.expiresAt).getTime();
 
