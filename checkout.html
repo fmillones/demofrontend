@@ -1,35 +1,52 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Checkout PayZen</title>
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon-reset.min.css">
-  <script src="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon.js"></script>
-  <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-  <main>
-    <a class="back" href="./index.html">← Cambiar país / adquirente</a>
-    <p class="eyebrow" id="context-eyebrow">PAYZEN · PRUEBAS</p>
-    <h1>Checkout</h1>
-    <p class="lead" id="context-lead">Pago seguro.</p>
-    <form id="payment-form">
-      <label>Monto (<span id="currency-label">—</span>)
-        <input name="amount" type="number" min="0.01" step="0.01" value="10.00" required>
-      </label>
-      <label>DNI <span>(opcional, 8 dígitos)</span>
-        <input name="dni" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" placeholder="12345678">
-      </label>
-    <label>Correo <span>(opcional)</span><input name="email" type="email" placeholder="cliente@ejemplo.com"></label>
-    <button type="submit">Continuar al pago</button>
-  </form>
-  <p id="status" role="status" aria-live="polite"></p>
-  <section id="checkout" hidden><h2>Datos de tarjeta</h2><div id="form-container"></div></section>
-  <section id="result" class="result" hidden></section>
-  <details><summary>Eventos de prueba</summary><button id="refresh-events" type="button" class="secondary">Actualizar</button><pre id="events">Aún no hay pagos.</pre></details>
-</main>
-<script src="./config.js"></script>
-<script src="./app.js"></script>
-</body></html>
+ <!doctype html>
+ <html lang="es">
+ <head>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <title>Checkout PayZen</title>
+   <link rel="icon" href="data:,">
+   <link rel="stylesheet" href="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon-reset.min.css">
+   <script src="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+   <link rel="stylesheet" href="./styles.css">
+ </head>
+ <body>
+   <main>
+     <a class="back" href="./index.html">← Cambiar país / adquirente</a>
+     <p class="eyebrow" id="context-eyebrow">PAYZEN · PRUEBAS</p>
+     <h1>Checkout</h1>
+     <p class="lead" id="context-lead">Pago seguro.</p>
+     <form id="payment-form">
+       <label>Monto (<span id="currency-label">—</span>)
+         <input name="amount" type="number" min="0.01" step="0.01" value="10.00" required>
+       </label>
+       <label>DNI <span>(opcional, 8 dígitos)</span>
+         <input name="dni" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" placeholder="12345678">
+       </label>
+       <label>Correo <span>(opcional)</span><input name="email" type="email" placeholder="cliente@ejemplo.com"></label>
+       <div class="method-select">
+         <button type="submit" data-method="card" class="method-card">
+           <span class="method-icon">💳</span>
+           <span class="method-title">Pagar con tarjeta</span>
+         </button>
+         <button type="submit" data-method="qr" class="method-card">
+           <span class="method-icon">📱</span>
+           <span class="method-title">Pagar con billetera electrónica</span>
+         </button>
+       </div>
+     </form>
+     <p id="status" role="status" aria-live="polite"></p>
+     <section id="checkout" hidden><h2>Datos de tarjeta</h2><div id="form-container"></div></section>
+     <section id="qr-checkout" class="qr-box" hidden>
+       <h2>Escanea para pagar</h2>
+       <canvas id="qr-canvas"></canvas>
+       <p class="qr-hint">Escanee desde su billetera electrónica</p>
+       <p class="qr-meta">Expira en: <strong id="qr-expires">--:--</strong></p>
+       <p class="qr-meta">Estado: <strong id="qr-status">Pendiente…</strong></p>
+     </section>
+     <section id="result" class="result" hidden></section>
+     <details><summary>Eventos de prueba</summary><button id="refresh-events" type="button" class="secondary">Actualizar</button><pre id="events">Aún no hay pagos.</pre></details>
+   </main>
+   <script src="./config.js"></script>
+   <script src="./app.js"></script>
+ </body></html>

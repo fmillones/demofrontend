@@ -9,9 +9,12 @@ if (!countryCode || !acquirerId) {
 const form = document.querySelector('#payment-form');
 const status = document.querySelector('#status');
 const checkout = document.querySelector('#checkout');
+const qrCheckout = document.querySelector('#qr-checkout');
 const resultBox = document.querySelector('#result');
 
 let currentCountry = null;
+let qrPollTimer = null;
+let qrCountdownTimer = null;
 
 function statusText(message) { status.textContent = message; }
 
@@ -22,15 +25,19 @@ async function sendClientResult(answer) {
   } catch { /* El resultado visual no depende del registro de prueba. */ }
 }
 
-function showResult(answer) {
+function showResult(text, paid) {
+  checkout.hidden = true; qrCheckout.hidden = true; resultBox.hidden = false;
+  resultBox.className = `result ${paid ? 'paid' : 'failed'}`;
+  resultBox.textContent = text;
+}
+
+function showCardResult(answer) {
   const paid = answer?.orderStatus === 'PAID';
   const units = answer?.orderDetails?.orderEffectiveAmount || 0;
   const currency = answer?.orderDetails?.orderCurrency || currentCountry?.currency || '';
   const divisor = currentCountry?.decimals === 0 ? 1 : 100;
   const decimals = currentCountry?.decimals ?? 2;
-  checkout.hidden = true; resultBox.hidden = false;
-  resultBox.className = `result ${paid ? 'paid' : 'failed'}`;
-  resultBox.textContent = paid ? `Pago aprobado — ${(units / divisor).toFixed(decimals)} ${currency}` : `Pago no aprobado — estado: ${answer?.orderStatus || 'DESCONOCIDO'}`;
+  showResult(paid ? `Pago aprobado — ${(units / divisor).toFixed(decimals)} ${currency}` : `Pago no aprobado — estado: ${answer?.orderStatus || 'DESCONOCIDO'}`, paid);
 }
 
 function loadKrypton(config) {
@@ -58,7 +65,7 @@ async function initializeContext() {
     currentCountry = countries[countryCode];
     if (!currentCountry || !currentCountry.acquirers[acquirerId]) {
       statusText('País o adquirente no reconocido.');
-      form.querySelector('button').disabled = true;
+      form.querySelectorAll('button').forEach(button => button.disabled = true);
       return;
     }
     const acquirer = currentCountry.acquirers[acquirerId];
@@ -72,34 +79,97 @@ async function initializeContext() {
   }
 }
 
-async function initializeCheckout(formToken) {
+async function initializeCardCheckout(formToken) {
   const config = await fetch(`${window.API_BASE_URL}/api/config`).then(r => r.json());
 
   const container = document.querySelector('#form-container');
-  container.innerHTML =
-    '<div class="kr-smart-form" kr-card-form-expanded></div>';
+  container.innerHTML = '<div class="kr-smart-form" kr-card-form-expanded></div>';
 
   await loadKrypton(config);
 
-  await KR.setFormConfig({
-    formToken: formToken
-  });
-  await KR.onSubmit(async event => { showResult(event.clientAnswer); await sendClientResult(event.clientAnswer); return false; });
-  await KR.onError(async event => { showResult(event.clientAnswer); await sendClientResult(event.clientAnswer); return false; });
+  await KR.setFormConfig({ formToken: formToken });
+  await KR.onSubmit(async event => { showCardResult(event.clientAnswer); await sendClientResult(event.clientAnswer); return false; });
+  await KR.onError(async event => { showCardResult(event.clientAnswer); await sendClientResult(event.clientAnswer); return false; });
   statusText('Formulario seguro cargado. Usa las tarjetas de prueba de PayZen.');
 }
 
+async function payWithCard(payload) {
+  const response = await fetch(`${window.API_BASE_URL}/api/payments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+  const data = await response.json();
+  if (!response.ok || !data.formToken) throw new Error(data.error || 'No se pudo crear el pago.');
+  form.hidden = true;
+  checkout.hidden = false;
+  await initializeCardCheckout(data.formToken);
+}
+
+function stopQrPolling() {
+  if (qrPollTimer) { clearInterval(qrPollTimer); qrPollTimer = null; }
+  if (qrCountdownTimer) { clearInterval(qrCountdownTimer); qrCountdownTimer = null; }
+}
+
+function formatCountdown(msRemaining) {
+  if (msRemaining <= 0) return '00:00';
+  const totalSeconds = Math.floor(msRemaining / 1000);
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
+  return `${minutes}:${seconds}`;
+}
+
+async function payWithQr(payload) {
+  const response = await fetch(`${window.API_BASE_URL}/api/payments/qr`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+  const data = await response.json();
+  if (!response.ok || !data.qrHash) throw new Error(data.error || 'No se pudo generar el QR.');
+
+  form.hidden = true;
+  qrCheckout.hidden = false;
+
+  const canvas = document.querySelector('#qr-canvas');
+  const expiresLabel = document.querySelector('#qr-expires');
+  const statusLabel = document.querySelector('#qr-status');
+  statusLabel.textContent = 'Pendiente…';
+
+  await QRCode.toCanvas(canvas, data.qrHash, { width: 240 });
+
+  const expiresAt = new Date(data.expiresAt).getTime();
+
+  qrCountdownTimer = setInterval(() => {
+    const remaining = expiresAt - Date.now();
+    expiresLabel.textContent = formatCountdown(remaining);
+    if (remaining <= 0) {
+      stopQrPolling();
+      statusLabel.textContent = 'Expirado';
+      showResult('El código QR expiró. Genera uno nuevo para intentar de nuevo.', false);
+    }
+  }, 1000);
+
+  qrPollTimer = setInterval(async () => {
+    try {
+      const check = await fetch(`${window.API_BASE_URL}/api/payments/qr/${data.transactionId}`).then(r => r.json());
+      if (check.approved) {
+        stopQrPolling();
+        statusLabel.textContent = 'Aprobado';
+        showResult(`Pago aprobado vía QR — ${Number(payload.amount).toFixed(currentCountry?.decimals ?? 2)} ${currentCountry?.currency || ''}`, true);
+        refreshEvents();
+      } else if (check.resultCode && check.resultCode !== '00') {
+        stopQrPolling();
+        statusLabel.textContent = 'Rechazado';
+        showResult(`Pago no aprobado — código: ${check.resultCode}`, false);
+        refreshEvents();
+      }
+    } catch { /* se reintenta en el siguiente ciclo */ }
+  }, 3000);
+
+  statusText('Escanea el código QR desde tu billetera electrónica.');
+}
+
 form.addEventListener('submit', async event => {
-  event.preventDefault(); statusText('Creando pago…');
+  event.preventDefault();
+  const method = event.submitter?.dataset.method || 'card';
+  statusText(method === 'qr' ? 'Generando código QR…' : 'Creando pago…');
   try {
     const payload = { ...Object.fromEntries(new FormData(form)), country: countryCode, acquirer: acquirerId };
-    const response = await fetch(`${window.API_BASE_URL}/api/payments`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-    const data = await response.json();
-    if (!response.ok || !data.formToken) throw new Error(data.error || 'No se pudo crear el pago.');
-    form.hidden = true;
-    checkout.hidden = false;
-
-    await initializeCheckout(data.formToken);
+    if (method === 'qr') await payWithQr(payload);
+    else await payWithCard(payload);
   } catch (error) { statusText(`Error: ${error.message}`); }
 });
 

@@ -21,5 +21,6 @@ async function staticFile(pathname, res) {
 
 http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  if (url.pathname === '/favicon.ico') { res.writeHead(204); return res.end(); }
   staticFile(url.pathname, res);
 }).listen(PORT, () => console.log(`Frontend disponible en http://localhost:${PORT}`));
