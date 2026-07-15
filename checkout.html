@@ -47,6 +47,11 @@
     </section>
     <section id="result" class="result" hidden></section>
     <details><summary>Eventos de prueba</summary><button id="refresh-events" type="button" class="secondary">Actualizar</button><pre id="events">Aún no hay pagos.</pre></details>
+    <details id="debug-details" style="margin-top:16px">
+      <summary>Debug QR — llamadas en vivo</summary>
+      <button id="clear-debug" type="button" class="secondary" style="margin:8px 0">Limpiar</button>
+      <pre id="debug-log" style="max-height:400px;overflow:auto">Esperando actividad…</pre>
+    </details>
   </main>
   <script src="./config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>

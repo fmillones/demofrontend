@@ -120,8 +120,17 @@ const ATIX_FINAL_REJECTION_CODES = new Set([
 ]);
 
 async function payWithQr(payload) {
-  const response = await fetch(`${window.API_BASE_URL}/api/payments/qr`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+  debugLog('send', 'POST /api/payments/qr', payload);
+
+  const response = await fetch(`${window.API_BASE_URL}/api/payments/qr`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
   const data = await response.json();
+
+  debugLog('recv', `POST /api/payments/qr → HTTP ${response.status}`, data);
+
   if (!response.ok || !data.qrHash) throw new Error(data.error || 'No se pudo generar el QR.');
 
   form.hidden = true;
@@ -131,9 +140,6 @@ async function payWithQr(payload) {
   const statusLabel = document.querySelector('#qr-status');
   statusLabel.textContent = 'Pendiente…';
 
-  // FIX 1: QRCode.toCanvas con callback devuelve undefined, por eso el await
-  // anterior resolvía al instante sin esperar el dibujo. Lo envolvemos en una
-  // Promise real para que el await funcione y los errores suban al try/catch.
   const qrContainer = document.getElementById('qr-canvas');
   qrContainer.innerHTML = '';
   await new Promise((resolve, reject) => {
@@ -160,9 +166,18 @@ async function payWithQr(payload) {
     }
   }, 1000);
 
+  let pollCount = 0;
   qrPollTimer = setInterval(async () => {
+    pollCount++;
+    const pollUrl = `${window.API_BASE_URL}/api/payments/qr/${data.transactionId}`;
+
     try {
-      const check = await fetch(`${window.API_BASE_URL}/api/payments/qr/${data.transactionId}`).then(r => r.json());
+      const check = await fetch(pollUrl).then(r => r.json());
+
+      // Solo logear cada 3 polls para no saturar, o si hay un resultado relevante
+      if (pollCount % 3 === 1 || check.approved || check.resultCode) {
+        debugLog('recv', `GET /api/payments/qr/${data.transactionId} (poll #${pollCount})`, check);
+      }
 
       if (check.approved) {
         stopQrPolling();
@@ -172,17 +187,15 @@ async function payWithQr(payload) {
         return;
       }
 
-      // FIX 2: antes se detenía con CUALQUIER código != '00', incluyendo el
-      // código 100 del sandbox que solo significa "aún pendiente". Ahora solo
-      // para si el código está en la lista de rechazos definitivos conocidos.
       if (check.resultCode && ATIX_FINAL_REJECTION_CODES.has(String(check.resultCode))) {
         stopQrPolling();
         statusLabel.textContent = 'Rechazado';
         showResult(`Pago no aprobado — código: ${check.resultCode}`, false);
         refreshEvents();
       }
-      // Cualquier otro código (100, null, etc.) → seguimos esperando
-    } catch { /* se reintenta en el siguiente ciclo */ }
+    } catch (err) {
+      debugLog('recv', `GET /api/payments/qr/${data.transactionId} (poll #${pollCount}) ERROR`, { error: err.message });
+    }
   }, 3000);
 
   statusText('Escanea el código QR desde tu billetera electrónica.');
@@ -204,3 +217,29 @@ document.querySelector('#refresh-events').addEventListener('click', refreshEvent
 
 initializeContext();
 refreshEvents();
+
+// ─── Debug logger ────────────────────────────────────────────────────────────
+const debugEntries = [];
+
+function debugLog(direction, label, data) {
+  const ts = new Date().toLocaleTimeString('es-PE', { hour12: false, fractionalSecondDigits: 2 });
+  const arrow = direction === 'send' ? '▲ SEND' : '▼ RECV';
+  debugEntries.unshift({ ts, arrow, label, data });
+  const el = document.querySelector('#debug-log');
+  if (!el) return;
+  el.textContent = debugEntries.map(e =>
+    `[${e.ts}] ${e.arrow}  ${e.label}\n${JSON.stringify(e.data, null, 2)}`
+  ).join('\n\n─────────────────────────────────────\n\n');
+  // Abrir el panel automáticamente al primer evento
+  const details = document.querySelector('#debug-details');
+  if (details) details.open = true;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelector('#clear-debug')?.addEventListener('click', () => {
+    debugEntries.length = 0;
+    const el = document.querySelector('#debug-log');
+    if (el) el.textContent = 'Limpiado.';
+  });
+});
+// ─────────────────────────────────────────────────────────────────────────────
