@@ -201,15 +201,27 @@ async function payWithQr(payload) {
   statusText('Escanea el código QR desde tu billetera electrónica.');
 }
 
+let isProcessing = false;
+
 form.addEventListener('submit', async event => {
   event.preventDefault();
+  if (isProcessing) return;
+  isProcessing = true;
+
+  const buttons = form.querySelectorAll('button');
+  buttons.forEach(b => b.disabled = true);
+
   const method = event.submitter?.dataset.method || 'card';
   statusText(method === 'qr' ? 'Generando código QR…' : 'Creando pago…');
   try {
     const payload = { ...Object.fromEntries(new FormData(form)), country: countryCode, acquirer: acquirerId };
     if (method === 'qr') await payWithQr(payload);
     else await payWithCard(payload);
-  } catch (error) { statusText(`Error: ${error.message}`); }
+  } catch (error) {
+    statusText(`Error: ${error.message}`);
+    buttons.forEach(b => b.disabled = false);
+    isProcessing = false;
+  }
 });
 
 async function refreshEvents() { const res = await fetch(`${window.API_BASE_URL}/api/payments`); const data = await res.json(); document.querySelector('#events').textContent = data.length ? JSON.stringify(data, null, 2) : 'Aún no hay pagos.'; }
