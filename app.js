@@ -128,10 +128,17 @@ async function payWithQr(payload) {
   const statusLabel = document.querySelector('#qr-status');
   statusLabel.textContent = 'Pendiente…';
 
-  await QRCode.toCanvas(canvas, data.qrHash, {
-    width: 240,
-    margin: 2
-});
+  const qrContainer = document.getElementById('qr-canvas');
+qrContainer.innerHTML = '';
+
+  await QRCode.toCanvas(data.qrHash, {
+      width: 240,
+      margin: 2
+  }, (err, canvas) => {
+      if (err) throw err;
+      qrContainer.appendChild(canvas);
+  });
+
   const expiresAt = new Date(data.expiresAt).getTime();
 
   qrCountdownTimer = setInterval(() => {
@@ -160,6 +167,12 @@ async function payWithQr(payload) {
       }
     } catch { /* se reintenta en el siguiente ciclo */ }
   }, 3000);
+
+  console.log("Entró a payWithQr");
+
+    console.log(payload);
+
+    console.log(window.API_BASE_URL);
 
   statusText('Escanea el código QR desde tu billetera electrónica.');
 }
