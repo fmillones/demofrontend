@@ -102,6 +102,21 @@ async function payWithCard(payload) {
   await initializeCardCheckout(data.formToken);
 }
 
+//atix
+ function waitForQrLibrary(timeoutMs = 8000) {
+   return new Promise((resolve, reject) => {
+     if (window.QRCode) return resolve();
+     const deadline = Date.now() + timeoutMs;
+     const check = () => {
+       if (window.QRCode) return resolve();
+       if (Date.now() > deadline) return reject(new Error('No se pudo cargar la librería QR (CDN bloqueado o sin conexión).'));
+       window.setTimeout(check, 50);
+     };
+     check();
+   });
+ }
+
+
 function stopQrPolling() {
   if (qrPollTimer) { clearInterval(qrPollTimer); qrPollTimer = null; }
   if (qrCountdownTimer) { clearInterval(qrCountdownTimer); qrCountdownTimer = null; }
@@ -128,6 +143,7 @@ async function payWithQr(payload) {
   const statusLabel = document.querySelector('#qr-status');
   statusLabel.textContent = 'Pendiente…';
 
+  await waitForQrLibrary();
   await QRCode.toCanvas(canvas, data.qrHash, { width: 240 });
 
   const expiresAt = new Date(data.expiresAt).getTime();
