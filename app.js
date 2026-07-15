@@ -15,6 +15,8 @@ const resultBox = document.querySelector('#result');
 let currentCountry = null;
 let qrPollTimer = null;
 let qrCountdownTimer = null;
+let currentTransactionId = null;
+let currentQrPayload = null;
 
 function statusText(message) { status.textContent = message; }
 
@@ -22,7 +24,7 @@ async function sendClientResult(answer) {
   try {
     await fetch(`${window.API_BASE_URL}/api/payments/client-result`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(answer) });
     refreshEvents();
-  } catch { /* El resultado visual no depende del registro de prueba. */ }
+  } catch { }
 }
 
 function showResult(text, paid) {
@@ -112,33 +114,75 @@ function formatCountdown(msRemaining) {
   return `${minutes}:${seconds}`;
 }
 
-// Códigos de rechazo DEFINITIVO de Atix. Mientras no los tengas documentados,
-// deja el Set vacío: cualquier código distinto de '00' se trata como "pendiente"
-// y el polling sigue hasta que el QR expire.
-const ATIX_FINAL_REJECTION_CODES = new Set([
-  // Ejemplos cuando los tengas: '05', '51', '55'
-]);
+const ATIX_FINAL_REJECTION_CODES = new Set([]);
+
+// Función que hace UNA sola consulta — la llama el botón manualmente
+async function consultarQr() {
+  if (!currentTransactionId) return;
+
+  const btn = document.querySelector('#btn-consultar');
+  const statusLabel = document.querySelector('#qr-status');
+  if (btn) btn.disabled = true;
+
+  const pollUrl = `${window.API_BASE_URL}/api/payments/qr/${currentTransactionId}`;
+  debugLog('send', `GET /api/payments/qr/${currentTransactionId}`, {});
+
+  try {
+    const check = await fetch(pollUrl).then(r => r.json());
+    debugLog('recv', `GET /api/payments/qr/${currentTransactionId}`, check);
+
+    if (check.approved) {
+      stopQrPolling();
+      statusLabel.textContent = 'Aprobado';
+      if (btn) btn.hidden = true;
+      showResult(`Pago aprobado vía QR — ${Number(currentQrPayload.amount).toFixed(currentCountry?.decimals ?? 2)} ${currentCountry?.currency || ''}`, true);
+      refreshEvents();
+      return;
+    }
+
+    if (check.resultCode && ATIX_FINAL_REJECTION_CODES.has(String(check.resultCode))) {
+      stopQrPolling();
+      statusLabel.textContent = 'Rechazado';
+      if (btn) btn.hidden = true;
+      showResult(`Pago no aprobado — código: ${check.resultCode}`, false);
+      refreshEvents();
+      return;
+    }
+
+    statusLabel.textContent = `Pendiente (código: ${check.resultCode || 'sin código'})`;
+  } catch (err) {
+    debugLog('recv', `GET /api/payments/qr/${currentTransactionId} ERROR`, { error: err.message });
+    statusLabel.textContent = 'Error al consultar, intenta de nuevo.';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
 
 async function payWithQr(payload) {
-  debugLog('send', 'POST /api/payments/qr', payload);
+  stopQrPolling();
+  currentQrPayload = payload;
 
+  debugLog('send', 'POST /api/payments/qr', payload);
   const response = await fetch(`${window.API_BASE_URL}/api/payments/qr`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(payload)
   });
   const data = await response.json();
-
   debugLog('recv', `POST /api/payments/qr → HTTP ${response.status}`, data);
 
   if (!response.ok || !data.qrHash) throw new Error(data.error || 'No se pudo generar el QR.');
+
+  currentTransactionId = data.transactionId;
 
   form.hidden = true;
   qrCheckout.hidden = false;
 
   const expiresLabel = document.querySelector('#qr-expires');
   const statusLabel = document.querySelector('#qr-status');
+  const btn = document.querySelector('#btn-consultar');
   statusLabel.textContent = 'Pendiente…';
+  if (btn) { btn.hidden = false; btn.disabled = false; }
 
   const qrContainer = document.getElementById('qr-canvas');
   qrContainer.innerHTML = '';
@@ -156,49 +200,19 @@ async function payWithQr(payload) {
 
   const expiresAt = new Date(data.expiresAt).getTime();
 
+  // Solo el countdown sigue automático, el polling es manual
   qrCountdownTimer = setInterval(() => {
     const remaining = expiresAt - Date.now();
     expiresLabel.textContent = formatCountdown(remaining);
     if (remaining <= 0) {
       stopQrPolling();
       statusLabel.textContent = 'Expirado';
+      if (btn) btn.hidden = true;
       showResult('El código QR expiró. Genera uno nuevo para intentar de nuevo.', false);
     }
   }, 1000);
 
-  let pollCount = 0;
-  qrPollTimer = setInterval(async () => {
-    pollCount++;
-    const pollUrl = `${window.API_BASE_URL}/api/payments/qr/${data.transactionId}`;
-
-    try {
-      const check = await fetch(pollUrl).then(r => r.json());
-
-      // Solo logear cada 3 polls para no saturar, o si hay un resultado relevante
-      if (pollCount % 3 === 1 || check.approved || check.resultCode) {
-        debugLog('recv', `GET /api/payments/qr/${data.transactionId} (poll #${pollCount})`, check);
-      }
-
-      if (check.approved) {
-        stopQrPolling();
-        statusLabel.textContent = 'Aprobado';
-        showResult(`Pago aprobado vía QR — ${Number(payload.amount).toFixed(currentCountry?.decimals ?? 2)} ${currentCountry?.currency || ''}`, true);
-        refreshEvents();
-        return;
-      }
-
-      if (check.resultCode && ATIX_FINAL_REJECTION_CODES.has(String(check.resultCode))) {
-        stopQrPolling();
-        statusLabel.textContent = 'Rechazado';
-        showResult(`Pago no aprobado — código: ${check.resultCode}`, false);
-        refreshEvents();
-      }
-    } catch (err) {
-      debugLog('recv', `GET /api/payments/qr/${data.transactionId} (poll #${pollCount}) ERROR`, { error: err.message });
-    }
-  }, 20000);
-
-  statusText('Escanea el código QR desde tu billetera electrónica.');
+  statusText('Escanea el código QR y luego pulsa "Consultar estado".');
 }
 
 let isProcessing = false;
@@ -230,7 +244,7 @@ document.querySelector('#refresh-events').addEventListener('click', refreshEvent
 initializeContext();
 refreshEvents();
 
-// ─── Debug logger ────────────────────────────────────────────────────────────
+// ─── Debug logger ─────────────────────────────────────────────────────────────
 const debugEntries = [];
 
 function debugLog(direction, label, data) {
@@ -242,7 +256,6 @@ function debugLog(direction, label, data) {
   el.textContent = debugEntries.map(e =>
     `[${e.ts}] ${e.arrow}  ${e.label}\n${JSON.stringify(e.data, null, 2)}`
   ).join('\n\n─────────────────────────────────────\n\n');
-  // Abrir el panel automáticamente al primer evento
   const details = document.querySelector('#debug-details');
   if (details) details.open = true;
 }
@@ -253,5 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.querySelector('#debug-log');
     if (el) el.textContent = 'Limpiado.';
   });
+  document.querySelector('#btn-consultar')?.addEventListener('click', consultarQr);
 });
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────────

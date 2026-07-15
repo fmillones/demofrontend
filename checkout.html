@@ -37,14 +37,13 @@
     <p id="status" role="status" aria-live="polite"></p>
     <section id="checkout" hidden><h2>Datos de tarjeta</h2><div id="form-container"></div></section>
     <section id="qr-checkout" class="qr-box" hidden>
-      <h2>Escanea para pagar</h2>
-
-      <div id="qr-canvas"></div>
-
-      <p class="qr-hint">Escanee desde su billetera electrónica</p>
-      <p class="qr-meta">Expira en: <strong id="qr-expires">--:--</strong></p>
-      <p class="qr-meta">Estado: <strong id="qr-status">Pendiente…</strong></p>
-    </section>
+  <h2>Escanea para pagar</h2>
+  <div id="qr-canvas"></div>
+  <p class="qr-hint">Escanee desde su billetera electrónica</p>
+  <p class="qr-meta">Expira en: <strong id="qr-expires">--:--</strong></p>
+  <p class="qr-meta">Estado: <strong id="qr-status">Pendiente…</strong></p>
+  <button id="btn-consultar" type="button" hidden>Consultar estado</button>  <!-- agrega esto -->
+</section>
     <section id="result" class="result" hidden></section>
     <details><summary>Eventos de prueba</summary><button id="refresh-events" type="button" class="secondary">Actualizar</button><pre id="events">Aún no hay pagos.</pre></details>
     <details id="debug-details" style="margin-top:16px">
