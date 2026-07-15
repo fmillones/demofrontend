@@ -49,7 +49,7 @@ function loadKrypton(config) {
       const deadline = Date.now() + 15000;
       const waitForKrypton = () => {
         if (window.KR?.loaded) return resolve();
-        if (Date.now() > deadline) return reject(new Error('Krypton no terminó de inicializarse. Revisa PAYZEN_STATIC_URL y la clave pública.'));
+        if (Date.now() > deadline) return reject(new Error('Krypton no terminó de inicializarse.'));
         window.setTimeout(waitForKrypton, 25);
       };
       waitForKrypton();
@@ -81,12 +81,9 @@ async function initializeContext() {
 
 async function initializeCardCheckout(formToken) {
   const config = await fetch(`${window.API_BASE_URL}/api/config`).then(r => r.json());
-
   const container = document.querySelector('#form-container');
   container.innerHTML = '<div class="kr-smart-form" kr-card-form-expanded></div>';
-
   await loadKrypton(config);
-
   await KR.setFormConfig({ formToken: formToken });
   await KR.onSubmit(async event => { showCardResult(event.clientAnswer); await sendClientResult(event.clientAnswer); return false; });
   await KR.onError(async event => { showCardResult(event.clientAnswer); await sendClientResult(event.clientAnswer); return false; });
@@ -115,6 +112,13 @@ function formatCountdown(msRemaining) {
   return `${minutes}:${seconds}`;
 }
 
+// Códigos de rechazo DEFINITIVO de Atix. Mientras no los tengas documentados,
+// deja el Set vacío: cualquier código distinto de '00' se trata como "pendiente"
+// y el polling sigue hasta que el QR expire.
+const ATIX_FINAL_REJECTION_CODES = new Set([
+  // Ejemplos cuando los tengas: '05', '51', '55'
+]);
+
 async function payWithQr(payload) {
   const response = await fetch(`${window.API_BASE_URL}/api/payments/qr`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
   const data = await response.json();
@@ -123,20 +127,25 @@ async function payWithQr(payload) {
   form.hidden = true;
   qrCheckout.hidden = false;
 
-  const canvas = document.getElementById('qr-canvas');
   const expiresLabel = document.querySelector('#qr-expires');
   const statusLabel = document.querySelector('#qr-status');
   statusLabel.textContent = 'Pendiente…';
 
+  // FIX 1: QRCode.toCanvas con callback devuelve undefined, por eso el await
+  // anterior resolvía al instante sin esperar el dibujo. Lo envolvemos en una
+  // Promise real para que el await funcione y los errores suban al try/catch.
   const qrContainer = document.getElementById('qr-canvas');
-qrContainer.innerHTML = '';
-
-  await QRCode.toCanvas(data.qrHash, {
-      width: 240,
-      margin: 2
-  }, (err, canvas) => {
-      if (err) throw err;
-      qrContainer.appendChild(canvas);
+  qrContainer.innerHTML = '';
+  await new Promise((resolve, reject) => {
+    QRCode.toCanvas(
+      data.qrHash,
+      { width: 240, margin: 2, errorCorrectionLevel: 'L' },
+      (err, canvas) => {
+        if (err) return reject(new Error('No se pudo generar la imagen QR: ' + err.message));
+        qrContainer.appendChild(canvas);
+        resolve();
+      }
+    );
   });
 
   const expiresAt = new Date(data.expiresAt).getTime();
@@ -154,25 +163,27 @@ qrContainer.innerHTML = '';
   qrPollTimer = setInterval(async () => {
     try {
       const check = await fetch(`${window.API_BASE_URL}/api/payments/qr/${data.transactionId}`).then(r => r.json());
+
       if (check.approved) {
         stopQrPolling();
         statusLabel.textContent = 'Aprobado';
         showResult(`Pago aprobado vía QR — ${Number(payload.amount).toFixed(currentCountry?.decimals ?? 2)} ${currentCountry?.currency || ''}`, true);
         refreshEvents();
-      } else if (check.resultCode && check.resultCode !== '00') {
+        return;
+      }
+
+      // FIX 2: antes se detenía con CUALQUIER código != '00', incluyendo el
+      // código 100 del sandbox que solo significa "aún pendiente". Ahora solo
+      // para si el código está en la lista de rechazos definitivos conocidos.
+      if (check.resultCode && ATIX_FINAL_REJECTION_CODES.has(String(check.resultCode))) {
         stopQrPolling();
         statusLabel.textContent = 'Rechazado';
         showResult(`Pago no aprobado — código: ${check.resultCode}`, false);
         refreshEvents();
       }
+      // Cualquier otro código (100, null, etc.) → seguimos esperando
     } catch { /* se reintenta en el siguiente ciclo */ }
   }, 3000);
-
-  console.log("Entró a payWithQr");
-
-    console.log(payload);
-
-    console.log(window.API_BASE_URL);
 
   statusText('Escanea el código QR desde tu billetera electrónica.');
 }
