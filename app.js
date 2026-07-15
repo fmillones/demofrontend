@@ -123,13 +123,15 @@ async function payWithQr(payload) {
   form.hidden = true;
   qrCheckout.hidden = false;
 
-  const qrImage = document.querySelector('#qr-canvas');
+  const canvas = document.getElementById('qr-canvas');
   const expiresLabel = document.querySelector('#qr-expires');
   const statusLabel = document.querySelector('#qr-status');
   statusLabel.textContent = 'Pendiente…';
 
-  qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(data.qrHash)}`;
-
+  await QRCode.toCanvas(canvas, data.qrHash, {
+    width: 240,
+    margin: 2
+});
   const expiresAt = new Date(data.expiresAt).getTime();
 
   qrCountdownTimer = setInterval(() => {
