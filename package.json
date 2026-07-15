@@ -7,5 +7,10 @@
     "start": "node server.mjs",
     "dev": "node --watch server.mjs"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.3"
+  }
 }
