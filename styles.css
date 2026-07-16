@@ -207,3 +207,8 @@ width:300px;height:300px;display:grid;place-items:center;
 .qr-box button{margin-top:4px}
 #debug-details{font-size:.82rem}
 #debug-log{max-height:280px}
+
+.pay-summary{border:1px solid #e1e5ee;border-radius:12px;padding:14px 18px;margin-top:22px;display:grid;gap:8px}
+.pay-summary-row{display:flex;justify-content:space-between;gap:12px;font-size:.88rem}
+.pay-summary-row span{color:#758095}
+.pay-summary-row strong{color:#172033;font-weight:700}

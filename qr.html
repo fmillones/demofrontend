@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pago con QR</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main>
+    <a class="back" href="./checkout.html" id="back-link">← Volver</a>
+    <p class="eyebrow">ATIX · PAGO CON QR</p>
+    <h1>Pago con billetera electrónica</h1>
+    <section class="pay-summary">
+      <div class="pay-summary-row"><span>País</span><strong id="sum-country">—</strong></div>
+      <div class="pay-summary-row"><span>Adquirente</span><strong id="sum-acquirer">—</strong></div>
+      <div class="pay-summary-row"><span>Monto</span><strong id="sum-amount">—</strong></div>
+      <div class="pay-summary-row" id="sum-dni-row" hidden><span>DNI</span><strong id="sum-dni">—</strong></div>
+      <div class="pay-summary-row" id="sum-email-row" hidden><span>Correo</span><strong id="sum-email">—</strong></div>
+    </section>
+    <p id="status" role="status" aria-live="polite"></p>
+    <section id="qr-checkout" class="qr-box">
+      <div id="qr-canvas"></div>
+      <p class="qr-hint">Escanee desde su billetera electrónica</p>
+      <p class="qr-meta">Expira en: <strong id="qr-expires">--:--</strong></p>
+      <p class="qr-meta">Estado: <strong id="qr-status">Pendiente…</strong></p>
+      <button id="btn-consultar" type="button" hidden>Consultar estado</button>
+    </section>
+    <section id="result" class="result" hidden></section>
+    <details open><summary>Eventos de prueba</summary><button id="refresh-events" type="button" class="secondary">Actualizar</button><pre id="events">Aún no hay pagos.</pre></details>
+    <details id="debug-details">
+      <summary>Debug QR — llamadas en vivo</summary>
+      <button id="clear-debug" type="button" class="secondary">Limpiar</button>
+      <pre id="debug-log">Esperando actividad…</pre>
+    </details>
+  </main>
+  <script src="./config.js"></script>
+  <script src="./qr.js"></script>
+</body></html>
