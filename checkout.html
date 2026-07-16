@@ -1,82 +1,82 @@
-1: <!doctype html>
-2: <html lang="es">
-3: <head>
-4:   <meta charset="utf-8">
-5:   <meta name="viewport" content="width=device-width, initial-scale=1">
-6:   <meta name="theme-color" content="#4453d8">
-7:   <title>Checkout PayZen</title>
-8:   <link rel="icon" href="data:,">
-9:   <link rel="stylesheet" href="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon-reset.min.css">
-10:   <script src="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon.js"></script>
-11:   <link rel="stylesheet" href="./styles.css">
-12: </head>
-13: <body>
-14:   <div class="page">
-15:     <header class="site-header">
-16:       <a class="brand" href="./index.html">
-17:         <span class="brand-mark" aria-hidden="true">
-18:           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 12 4 20 20M8 20 12 11 16 20"/></svg>
-19:         </span>
-20:         <span class="brand-text">Lyra <span class="brand-region">Latam</span></span>
-21:       </a>
-22:       <ol class="steps" aria-label="Progreso del pago">
-23:         <li class="step is-done"><span class="step-index">1</span><span>País</span></li>
-24:         <li class="step-sep" aria-hidden="true"></li>
-25:         <li class="step is-done"><span class="step-index">2</span><span>Adquirente</span></li>
-26:         <li class="step-sep" aria-hidden="true"></li>
-27:         <li class="step is-active"><span class="step-index">3</span><span>Pago</span></li>
-28:       </ol>
-29:     </header>
-30:     <main>
-31:       <section class="card-panel" style="border-top:0;padding-top:clamp(28px,4vw,44px);margin-top:0">
-32:         <a class="back" href="./index.html">← Cambiar país / adquirente</a>
-33:         <p class="eyebrow" id="context-eyebrow">PAYZEN · PRUEBAS</p>
-34:         <h1>Checkout</h1>
-35:         <p class="lead" id="context-lead">Pago seguro.</p>
-36:         <form id="payment-form">
-37:           <label>Monto (<span id="currency-label">—</span>)
-38:             <input name="amount" type="number" min="0.01" step="0.01" value="10.00" required>
-39:           </label>
-40:           <label>DNI <span>(opcional, 8 dígitos)</span>
-41:             <input name="dni" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" placeholder="12345678">
-42:           </label>
-43:           <label>Correo <span>(opcional)</span><input name="email" type="email" placeholder="cliente@ejemplo.com"></label>
-44:           <div class="method-select">
-45:             <button type="submit" data-method="card" class="method-card">
-46:               <span class="method-icon">💳</span>
-47:               <span class="method-title">Pagar con tarjeta</span>
-48:             </button>
-49:             <button type="submit" data-method="qr" class="method-card">
-50:               <span class="method-icon">📱</span>
-51:               <span class="method-title">Pagar con billetera electrónica</span>
-52:             </button>
-53:           </div>
-54:         </form>
-55:         <p id="status" role="status" aria-live="polite"></p>
-56:         <section id="checkout" hidden><h2>Datos de tarjeta</h2><div id="form-container"></div></section>
-57:         <section id="qr-checkout" class="qr-box" hidden>
-58:           <h2>Escanea para pagar</h2>
-59:           <div id="qr-canvas"></div>
-60:           <p class="qr-hint">Escanee desde su billetera electrónica</p>
-61:           <p class="qr-meta">Expira en: <strong id="qr-expires">--:--</strong></p>
-62:           <p class="qr-meta">Estado: <strong id="qr-status">Pendiente…</strong></p>
-63:           <button id="btn-consultar" type="button" hidden>Consultar estado</button>
-64:         </section>
-65:         <section id="result" class="result" hidden></section>
-66:         <details><summary>Eventos de prueba</summary><button id="refresh-events" type="button" class="secondary">Actualizar</button><pre id="events">Aún no hay pagos.</pre></details>
-67:         <details id="debug-details">
-68:           <summary>Debug QR — llamadas en vivo</summary>
-69:           <button id="clear-debug" type="button" class="secondary">Limpiar</button>
-70:           <pre id="debug-log">Esperando actividad…</pre>
-71:         </details>
-72:       </section>
-73:     </main>
-74:     <footer class="site-footer">
-75:       <p>Entorno de pruebas — no se procesan cobros reales.</p>
-76:       <p class="site-footer-meta">Perú · Argentina · Chile · Uruguay</p>
-77:     </footer>
-78:   </div>
-79:   <script src="./config.js"></script>
-80:   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-81:   <script src="./app.js"></script>
-82: </body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#4453d8">
+  <title>Checkout PayZen</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon-reset.min.css">
+  <script src="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon.js"></script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page">
+    <header class="site-header">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 12 4 20 20M8 20 12 11 16 20"/></svg>
+        </span>
+        <span class="brand-text">Lyra <span class="brand-region">Latam</span></span>
+      </a>
+      <ol class="steps" aria-label="Progreso del pago">
+        <li class="step is-done"><span class="step-index">1</span><span>País</span></li>
+        <li class="step-sep" aria-hidden="true"></li>
+        <li class="step is-done"><span class="step-index">2</span><span>Adquirente</span></li>
+        <li class="step-sep" aria-hidden="true"></li>
+        <li class="step is-active"><span class="step-index">3</span><span>Pago</span></li>
+      </ol>
+    </header>
+    <main>
+      <section class="card-panel" style="border-top:0;padding-top:clamp(28px,4vw,44px);margin-top:0">
+        <a class="back" href="./index.html">← Cambiar país / adquirente</a>
+        <p class="eyebrow" id="context-eyebrow">PAYZEN · PRUEBAS</p>
+        <h1>Checkout</h1>
+        <p class="lead" id="context-lead">Pago seguro.</p>
+        <form id="payment-form">
+          <label>Monto (<span id="currency-label">—</span>)
+            <input name="amount" type="number" min="0.01" step="0.01" value="10.00" required>
+          </label>
+          <label>DNI <span>(opcional, 8 dígitos)</span>
+            <input name="dni" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" placeholder="12345678">
+          </label>
+          <label>Correo <span>(opcional)</span><input name="email" type="email" placeholder="cliente@ejemplo.com"></label>
+          <div class="method-select">
+            <button type="submit" data-method="card" class="method-card">
+              <span class="method-icon">💳</span>
+              <span class="method-title">Pagar con tarjeta</span>
+            </button>
+            <button type="submit" data-method="qr" class="method-card">
+              <span class="method-icon">📱</span>
+              <span class="method-title">Pagar con billetera electrónica</span>
+            </button>
+          </div>
+        </form>
+        <p id="status" role="status" aria-live="polite"></p>
+        <section id="checkout" hidden><h2>Datos de tarjeta</h2><div id="form-container"></div></section>
+        <section id="qr-checkout" class="qr-box" hidden>
+          <h2>Escanea para pagar</h2>
+          <div id="qr-canvas"></div>
+          <p class="qr-hint">Escanee desde su billetera electrónica</p>
+          <p class="qr-meta">Expira en: <strong id="qr-expires">--:--</strong></p>
+          <p class="qr-meta">Estado: <strong id="qr-status">Pendiente…</strong></p>
+          <button id="btn-consultar" type="button" hidden>Consultar estado</button>
+        </section>
+        <section id="result" class="result" hidden></section>
+        <details><summary>Eventos de prueba</summary><button id="refresh-events" type="button" class="secondary">Actualizar</button><pre id="events">Aún no hay pagos.</pre></details>
+        <details id="debug-details">
+          <summary>Debug QR — llamadas en vivo</summary>
+          <button id="clear-debug" type="button" class="secondary">Limpiar</button>
+          <pre id="debug-log">Esperando actividad…</pre>
+        </details>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <p>Entorno de pruebas — no se procesan cobros reales.</p>
+      <p class="site-footer-meta">Perú · Argentina · Chile · Uruguay</p>
+    </footer>
+  </div>
+  <script src="./config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script src="./app.js"></script>
+</body></html>
