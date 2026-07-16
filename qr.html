@@ -28,12 +28,9 @@
       <button id="btn-consultar" type="button" hidden>Consultar estado</button>
     </section>
     <section id="result" class="result" hidden></section>
-    <details open><summary>Eventos de prueba</summary><button id="refresh-events" type="button" class="secondary">Actualizar</button><pre id="events">Aún no hay pagos.</pre></details>
-    <details id="debug-details">
-      <summary>Debug QR — llamadas en vivo</summary>
-      <button id="clear-debug" type="button" class="secondary">Limpiar</button>
-      <pre id="debug-log">Esperando actividad…</pre>
-    </details>
+    <details open><summary>Lo que enviamos</summary><pre id="sent-log">Aún no se ha enviado nada.</pre></details>
+    <details open><summary>Lo que recibimos</summary><pre id="received-log">Aún no se ha recibido nada.</pre></details>
+    <details open><summary>IPN / Webhook recibido</summary><pre id="ipn-log">Esperando notificación de Atix…</pre></details>
   </main>
   <script src="./config.js"></script>
   <script src="./qr.js"></script>

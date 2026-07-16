@@ -16,26 +16,36 @@ const qrContainer = document.querySelector('#qr-canvas');
 const expiresLabel = document.querySelector('#qr-expires');
 const statusLabel = document.querySelector('#qr-status');
 const btnConsultar = document.querySelector('#btn-consultar');
-const debugLog = document.querySelector('#debug-log');
+const sentLog = document.querySelector('#sent-log');
+const receivedLog = document.querySelector('#received-log');
+const ipnLog = document.querySelector('#ipn-log');
 
 let currentCountry = null;
 let qrPollTimer = null;
 let qrCountdownTimer = null;
+let ipnPollTimer = null;
 let currentTransactionId = null;
-let debugHasEntries = false;
 
 document.querySelector('#back-link').href = `./checkout.html?country=${countryCode}&acquirer=${acquirerId}`;
 
 function statusText(message) { status.textContent = message; }
 
-function logDebug(label, data) {
+// Las 3 cajas de log son locales a ESTE QR: nacen vacías en cada
+// carga de página (un pago nuevo siempre trae un transactionId
+// nuevo, así que nunca arrastran datos de intentos anteriores).
+function setLog(el, label, data) {
   const time = new Date().toLocaleTimeString();
-  const line = `[${time}] ${label}\n${JSON.stringify(data, null, 2)}\n`;
-  debugLog.textContent = debugHasEntries ? `${debugLog.textContent}\n${line}` : line;
-  debugHasEntries = true;
-  debugLog.scrollTop = debugLog.scrollHeight;
+  el.textContent = `[${time}] ${label}\n${JSON.stringify(data, null, 2)}`;
+  el.dataset.empty = 'false';
 }
-document.querySelector('#clear-debug').addEventListener('click', () => { debugLog.textContent = 'Esperando actividad…'; debugHasEntries = false; });
+
+function appendLog(el, label, data) {
+  const time = new Date().toLocaleTimeString();
+  const line = `[${time}] ${label}\n${JSON.stringify(data, null, 2)}`;
+  const isEmpty = el.dataset.empty !== 'false';
+  el.textContent = isEmpty ? line : `${el.textContent}\n\n${line}`;
+  el.dataset.empty = 'false';
+}
 
 function showResult(text, paid) {
   qrCheckout.hidden = true; resultBox.hidden = false;
@@ -43,9 +53,10 @@ function showResult(text, paid) {
   resultBox.textContent = text;
 }
 
-function stopQrPolling() {
+function stopAllPolling() {
   if (qrPollTimer) { clearInterval(qrPollTimer); qrPollTimer = null; }
   if (qrCountdownTimer) { clearInterval(qrCountdownTimer); qrCountdownTimer = null; }
+  if (ipnPollTimer) { clearInterval(ipnPollTimer); ipnPollTimer = null; }
 }
 
 function formatCountdown(msRemaining) {
@@ -58,19 +69,36 @@ function formatCountdown(msRemaining) {
 
 async function checkStatus() {
   const check = await fetch(`${window.API_BASE_URL}/api/payments/qr/${currentTransactionId}`).then(r => r.json());
-  logDebug(`GET /api/payments/qr/${currentTransactionId}`, check);
+  appendLog(receivedLog, `Consulta en vivo — GET /api/payments/qr/${currentTransactionId}`, check);
   if (check.approved) {
-    stopQrPolling();
+    stopAllPolling();
     statusLabel.textContent = 'Aprobado';
     showResult(`Pago aprobado vía QR — ${Number(amount).toFixed(currentCountry?.decimals ?? 2)} ${currentCountry?.currency || ''}`, true);
-    refreshEvents();
   } else if (check.resultCode && check.resultCode !== '00') {
-    stopQrPolling();
+    stopAllPolling();
     statusLabel.textContent = 'Rechazado';
     showResult(`Pago no aprobado — código: ${check.resultCode}`, false);
-    refreshEvents();
   }
   return check;
+}
+
+// Pregunta al backend, cada 3s, si ya llegó el webhook de Atix
+// (ATIX_WEBHOOK) para ESTE transactionId. Lee el registro local
+// (GET /api/payments/qr/record/:id) en vez de llamar a Atix de nuevo.
+function startIpnPolling() {
+  ipnPollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`${window.API_BASE_URL}/api/payments/qr/record/${currentTransactionId}`);
+      if (!res.ok) return;
+      const record = await res.json();
+      const webhookEvents = (record.events || []).filter(event => event.type === 'ATIX_WEBHOOK');
+      if (webhookEvents.length) {
+        setLog(ipnLog, `Webhook de Atix recibido (${webhookEvents.length})`, webhookEvents);
+        clearInterval(ipnPollTimer);
+        ipnPollTimer = null;
+      }
+    } catch { /* Reintenta en el siguiente ciclo. */ }
+  }, 3000);
 }
 
 function paintSummary(country, acquirer) {
@@ -92,9 +120,11 @@ async function start() {
 
     statusText('Generando código QR…');
     const payload = { country: countryCode, acquirer: acquirerId, amount, dni, email };
+    setLog(sentLog, 'POST /api/payments/qr', payload);
+
     const response = await fetch(`${window.API_BASE_URL}/api/payments/qr`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await response.json();
-    logDebug('POST /api/payments/qr', data);
+    appendLog(receivedLog, 'Respuesta de POST /api/payments/qr', data);
     if (!response.ok || !data.qrHash) throw new Error(data.error || 'No se pudo generar el QR.');
 
     currentTransactionId = data.transactionId;
@@ -107,22 +137,21 @@ async function start() {
       const remaining = expiresAt - Date.now();
       expiresLabel.textContent = formatCountdown(remaining);
       if (remaining <= 0) {
-        stopQrPolling();
+        stopAllPolling();
         statusLabel.textContent = 'Expirado';
         showResult('El código QR expiró. Vuelve a intentar desde el checkout.', false);
       }
     }, 1000);
 
     qrPollTimer = setInterval(() => { checkStatus().catch(() => {}); }, 3000);
+    startIpnPolling();
 
     statusText('Escanea el código QR desde tu billetera electrónica.');
-  } catch (error) { statusText(`Error: ${error.message}`); logDebug('ERROR', { message: error.message }); }
+  } catch (error) {
+    statusText(`Error: ${error.message}`);
+  }
 }
 
-btnConsultar.addEventListener('click', () => { checkStatus().catch(error => logDebug('ERROR', { message: error.message })); });
-
-async function refreshEvents() { const res = await fetch(`${window.API_BASE_URL}/api/payments/qr`); const data = await res.json(); document.querySelector('#events').textContent = data.length ? JSON.stringify(data, null, 2) : 'Aún no hay pagos.'; }
-document.querySelector('#refresh-events').addEventListener('click', refreshEvents);
+btnConsultar.addEventListener('click', () => { checkStatus().catch(() => {}); });
 
 start();
-refreshEvents();
