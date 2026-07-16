@@ -3,17 +3,41 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#4453d8">
   <title>Demo Lyra Latam</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <main>
-    <p class="eyebrow">LYRA · DEMO LATAM</p>
-    <h1>Demo Lyra Latam</h1>
-    <p class="lead">Elige un país para probar su flujo de pago y los adquirentes disponibles.</p>
-    <div id="countries" class="grid">Cargando países…</div>
-  </main>
+  <div class="page">
+    <header class="site-header">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 12 4 20 20M8 20 12 11 16 20"/></svg>
+        </span>
+        <span class="brand-text">Lyra <span class="brand-region">Latam</span></span>
+      </a>
+      <ol class="steps" aria-label="Progreso del pago">
+        <li class="step is-active"><span class="step-index">1</span><span>País</span></li>
+        <li class="step-sep" aria-hidden="true"></li>
+        <li class="step"><span class="step-index">2</span><span>Adquirente</span></li>
+        <li class="step-sep" aria-hidden="true"></li>
+        <li class="step"><span class="step-index">3</span><span>Pago</span></li>
+      </ol>
+    </header>
+    <main>
+      <section class="card-panel" style="border-top:0;padding-top:clamp(28px,4vw,44px);margin-top:0">
+        <p class="eyebrow">LYRA · DEMO LATAM</p>
+        <h1>Elige un país para empezar</h1>
+        <p class="lead">Prueba el flujo de pago y los adquirentes disponibles en cada mercado.</p>
+        <div id="countries" class="grid">Cargando países…</div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <p>Entorno de pruebas — no se procesan cobros reales.</p>
+      <p class="site-footer-meta">Perú · Argentina · Chile · Uruguay</p>
+    </footer>
+  </div>
   <script src="./config.js"></script>
   <script src="./home.js"></script>
 </body>
