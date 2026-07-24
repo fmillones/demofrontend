@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Crear token de tarjeta</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon-reset.min.css">
+  <script src="https://static.payzen.lat/static/js/krypton-client/V4.0/ext/neon.js"></script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main>
+    <a class="back" href="./select-method.html" id="back-link">← Volver</a>
+    <p class="eyebrow">PAYZEN · CREAR TOKEN</p>
+    <h1>Crear token de tarjeta</h1>
+    <p class="lead">Registra una tarjeta sin realizar ningún cargo (transacción de verificación por 0).</p>
+    <section class="pay-summary">
+      <div class="pay-summary-row"><span>País</span><strong id="sum-country">—</strong></div>
+      <div class="pay-summary-row"><span>Adquirente</span><strong id="sum-acquirer">—</strong></div>
+    </section>
+    <form id="token-form">
+      <label>Correo del comprador
+        <input name="email" type="email" placeholder="cliente@ejemplo.com" required>
+      </label>
+      <label>Referencia del cliente <span>(opcional)</span>
+        <input name="reference" placeholder="myCustomerRef-123456">
+      </label>
+      <button type="submit">Generar token</button>
+    </form>
+    <p id="status" role="status" aria-live="polite"></p>
+    <section id="checkout" hidden><div id="form-container"></div></section>
+    <section id="result" class="result" hidden></section>
+    <details open><summary>Lo que enviamos</summary><pre id="sent-log">Aún no se ha enviado nada.</pre></details>
+    <details open><summary>Lo que recibimos</summary><pre id="received-log">Aún no se ha recibido nada.</pre></details>
+    <details open><summary>IPN recibido (backend)</summary><pre id="ipn-log">Esperando notificación IPN de PayZen…</pre></details>
+  </main>
+  <script src="./config.js"></script>
+  <script src="./token.js"></script>
+</body></html>

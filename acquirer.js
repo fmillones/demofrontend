@@ -14,7 +14,7 @@ async function loadAcquirers() {
     document.querySelector('#country-title').textContent = `${country.name} — elige un adquirente`;
 
     grid.innerHTML = Object.entries(country.acquirers).map(([id, acquirer]) => `
-      <a class="card" href="./checkout.html?country=${countryCode}&acquirer=${id}">
+      <a class="card" href="./select-method.html?country=${countryCode}&acquirer=${id}">
         ${acquirer.logo ? `<img class="card-logo" src="${acquirer.logo}" alt="${acquirer.name}" onerror="this.remove()">` : ''}
         <span class="card-title">${acquirer.name}</span>
         <span class="card-sub">${country.currency}</span>

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>¿Qué deseas hacer? — Demo Lyra Latam</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main>
+    <a class="back" href="./index.html" id="back-link">← Cambiar país / adquirente</a>
+    <p class="eyebrow" id="context-eyebrow">PAYZEN · PRUEBAS</p>
+    <h1>¿Qué deseas hacer?</h1>
+    <p class="lead" id="context-lead">Elige si quieres realizar un pago o solo registrar el token de una tarjeta.</p>
+    <div class="method-select">
+      <button type="button" id="btn-pay" class="method-card">
+        <span class="method-icon">💳</span>
+        <span class="method-title">Realizar pago</span>
+      </button>
+      <button type="button" id="btn-token" class="method-card">
+        <span class="method-icon">🔑</span>
+        <span class="method-title">Crear token</span>
+      </button>
+    </div>
+    <p id="status" role="status" aria-live="polite"></p>
+  </main>
+  <script src="./config.js"></script>
+  <script src="./select-method.js"></script>
+</body></html>
