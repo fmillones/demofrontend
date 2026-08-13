@@ -42,6 +42,30 @@ function appendLog(el, label, data) {
   el.dataset.empty = 'false';
 }
 
+// Igual que setLog/appendLog pero para texto PURO (no JSON.stringify):
+// se usa para mostrar el body crudo del IPN tal como PayZen lo mandó
+// (application/x-www-form-urlencoded), solo decodificado para que se
+// pueda leer, sin reformatear su estructura ni envolverlo en otro JSON.
+function setRawLog(el, label, rawText) {
+  const time = new Date().toLocaleTimeString();
+  el.textContent = `[${time}] ${label}\n${rawText}`;
+  el.dataset.empty = 'false';
+}
+
+// Decodifica application/x-www-form-urlencoded a texto legible,
+// SIN tocar el contenido de cada valor (kr-answer sigue siendo el
+// JSON exacto que mandó PayZen, solo separado por líneas para
+// poder leerlo — no se reordena ni se reformatea nada).
+function decodeRawBody(rawBody) {
+  return rawBody
+    .split('&')
+    .map(pair => {
+      const [key, value = ''] = pair.split('=');
+      return `${decodeURIComponent(key)}=${decodeURIComponent(value.replace(/\+/g, ' '))}`;
+    })
+    .join('\n');
+}
+
 async function sendClientResult(answer) {
   try {
     await fetch(`${window.API_BASE_URL}/api/payments/client-result`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(answer) });
@@ -102,7 +126,13 @@ function startIpnPolling(orderId) {
       const payment = await res.json();
       const ipnEvents = (payment.events || []).filter(event => event.type === 'IPN');
       if (ipnEvents.length) {
-        setLog(ipnLog, `IPN recibido (${ipnEvents.length})`, ipnEvents);
+        // Mostramos el rawBody de cada IPN PURO (decodificado, sin
+        // reformatear), uno tras otro — no el objeto `answer` ya
+        // parseado ni el evento completo envuelto en otro JSON.
+        const rawText = ipnEvents
+          .map(event => decodeRawBody(event.data?.rawBody || ''))
+          .join('\n\n---\n\n');
+        setRawLog(ipnLog, `IPN recibido (${ipnEvents.length})`, rawText);
         clearInterval(ipnPollTimer);
         ipnPollTimer = null;
       }
