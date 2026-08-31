@@ -161,7 +161,12 @@ async function start() {
     startIpnPolling(currentOrderId);
 
     const config = await fetch(`${window.API_BASE_URL}/api/config`).then(r => r.json());
-    document.querySelector('#form-container').innerHTML = '<div class="kr-smart-form" kr-card-form-expanded></div>';
+    document.querySelector('#form-container').innerHTML = `
+      <div class="kr-smart-form" kr-card-form-expanded>
+        <div class="kr-identity-document-type"></div>
+        <div class="kr-identity-document-number"></div>
+      </div>
+    `;
     await loadKrypton(config);
     await KR.setFormConfig({ formToken: data.formToken });
     await KR.onSubmit(async event => {
