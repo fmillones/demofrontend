@@ -172,7 +172,7 @@ form.addEventListener('submit', async event => {
     startIpnPolling(currentOrderId);
 
     const config = await fetch(`${window.API_BASE_URL}/api/config`).then(r => r.json());
-    document.querySelector('#form-container').innerHTML = '<div class="kr-smart-form" kr-card-form-expanded></div>';
+    document.querySelector('#form-container').innerHTML = '<div class="kr-embedded" kr-card-form-expanded></div>';
     await loadKrypton(config);
     await KR.setFormConfig({ formToken: data.formToken });
     await KR.onSubmit(async submitEvent => {
