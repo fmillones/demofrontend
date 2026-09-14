@@ -162,7 +162,7 @@ async function start() {
 
     const config = await fetch(`${window.API_BASE_URL}/api/config`).then(r => r.json());
     document.querySelector('#form-container').innerHTML = `
-      <div class="kr-smart-form" kr-card-form-expanded>
+      <div class="kr-embedded" kr-card-form-expanded>
         <div class="kr-identity-document-type"></div>
         <div class="kr-identity-document-number"></div>
       </div>
